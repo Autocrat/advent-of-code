@@ -24,7 +24,6 @@ do
 	fi
 	((PRIORITY_TOTAL+=${PRIORITY}))
    fi
-    
 done < input.txt
 
 echo ${PRIORITY_TOTAL}
