@@ -68,4 +68,5 @@ fn main() {
             }
         }  
     }
+    println!("Game total possible: {game_total_possible}");
 }
