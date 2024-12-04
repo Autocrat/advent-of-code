@@ -22,7 +22,7 @@ fn main() {
             let newDelta = report[i] - report[i-1];
             if newDelta.abs() > 3 {
                 safe = false; 
-            } else if newDelta.abs() < 1{
+            } else if newDelta == 0{
                 safe = false; 
             } else if prevDelta < 0 && newDelta > 0{
                 safe = false; 
