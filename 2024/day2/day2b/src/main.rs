@@ -18,22 +18,22 @@ fn main() {
         let mut prevDelta = 0;
         let mut safe = true;
         let mut offset = 0;
-
+        
         for i in 1..report.len()
         {
 //            println!{"Element: {}  {}", i, i-1-offset};
-            let newDelta = report[i] - report[i-1-offset];
-
-            if newDelta.abs() > 3 {
+            let currentDelta = report[i] - report[i-1-offset];
+            
+            if currentDelta.abs() > 3 {
                 safe = false; 
-            } else if newDelta == 0{
+            } else if currentDelta == 0 {
                 safe = false; 
-            } else if prevDelta < 0 && newDelta > 0{
+            } else if prevDelta < 0 && currentDelta > 0 {
                 safe = false; 
-            } else if prevDelta > 0 && newDelta < 0 {
+            } else if prevDelta > 0 && currentDelta < 0 {
                 safe = false; 
             } else {
-                prevDelta = newDelta;
+                prevDelta = currentDelta;
             }
             
             if ! safe && offset == 0 && i > 1 {
