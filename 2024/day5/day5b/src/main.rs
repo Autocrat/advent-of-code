@@ -48,23 +48,26 @@ fn main() {
             //look for successful splits on '|' to find "rules"
             //it won't have one if it's not a rule
             //put all the data into vector of tuples 
+            if let Some(result) =  line.split_once("|") {
+                rulesVec.push(result);
+            } else {
+                //look for lines with ',' to be the data
+                let mut dataVector : Vec<_> = line.split(",").collect();
 
-            match line.split_once("|") {
-                Some (result) => rulesVec.push(result),
-                None => (),
-            }
-            
-            let mut dataVector : Vec<_> = line.split(",").collect();
-
-            if dataVector.len() > 1 {                
-                if let Some((i,j)) = checkRulesAgainstData(&rulesVec,&dataVector) {
-                    dataVector.swap(i,j);
-                    while let Some((x,y)) = checkRulesAgainstData(&rulesVec,&dataVector) {
-                        dataVector.swap(x,y);
-                    }
-                    let value = dataVector[dataVector.len()/2].parse::<i32>().expect("Not a number");
-                    total += value;                   
-                }               
+                //if there is data, run the check function.  It will return Some with the
+                //indices to swap, or None
+                //if the first check is None, don't care about this
+                if dataVector.len() > 0 {                
+                    if let Some((i,j)) = checkRulesAgainstData(&rulesVec,&dataVector) {
+                        //do a swap, then keep swapping until there are no more
+                        dataVector.swap(i,j);
+                        while let Some((x,y)) = checkRulesAgainstData(&rulesVec,&dataVector) {
+                            dataVector.swap(x,y);
+                        }
+                        let value = dataVector[dataVector.len()/2].parse::<i32>().expect("Not a number");
+                        total += value;                   
+                    }               
+                }
             }
         }        
     }
