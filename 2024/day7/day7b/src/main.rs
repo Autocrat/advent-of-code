@@ -2,12 +2,8 @@
 #![allow(non_snake_case)]
 use std::fs;
 
-//convert a number to a binary representation in a vector of unsigned integers, with the bits in reverse order
-// ie:
-// 2  ---> [0, 1]
-// 3  ---> [1, 1]
-// 4  ---> [0, 0, 1]
-
+//convert a number to a trinary representation in a vector of unsigned integers, with the. . tribits? in reverse 
+//order
 fn format_trinary(mut x: usize) -> Vec<usize> {
     let mut result = vec![];
 
