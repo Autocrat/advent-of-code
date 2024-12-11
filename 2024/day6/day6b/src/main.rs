@@ -7,9 +7,7 @@ fn getCharacterAtPosition(fileAsALump : &Vec<&str>, position : &(usize, usize)) 
     return retVal;
 }
 
-
-
-fn checkNextPosition(fileAsALump : &Vec<&str>, position : &(usize, usize), direction : &char) -> char {
+fn checkNextPosition(fileAsALump : &Vec<&str>, position : &(usize, usize), direction : char) -> char {
     match direction {
         '^'=> { 
                 if position.1 != 0 {
@@ -36,18 +34,45 @@ fn checkNextPosition(fileAsALump : &Vec<&str>, position : &(usize, usize), direc
     return '*';
 }
 
-fn moveGuard(position : &mut (usize, usize), direction : &char, visitedMap : &mut HashMap<(usize,usize),char>)  {
+fn willHitBarrel(position : &(usize, usize), direction : char, barrelPosition : &(usize,usize) ) -> bool {
     match direction {
-        '^'=> position.1 -= 1,
-        '>'=> position.0 += 1,
-        'v'=> position.1 += 1,
-        '<'=> position.0 -= 1,
-          _=> (),
+        '^'=> { 
+                if position.1 != 0 {
+                    return  (position.0,position.1 - 1 ) == *barrelPosition;
+                }
+            },
+        '>'=> {
+                return (position.0 + 1,position.1 ) == *barrelPosition;                    
+            }
+        'v'=> {
+                return (position.0 ,position.1 + 1 ) == *barrelPosition;                    
+            }
+        '<'=> { 
+                if position.0 != 0 {
+                    return (position.0 -1 ,position.1 ) == *barrelPosition;
+                }
+            },
+          _=> return false,
     }
-    visitedMap.insert((position.0,position.1), *direction);
+    return false;
 }
 
-fn rotateGuard(direction : &char) -> char {
+//Be careful where you run this, so as not to drive usize negative (Rust doesn't like that)
+//checkNextPosition will return '*' if it goes off the map (or negative), preventing the code in main from hitting this
+fn getMoveToPosition(position : &(usize, usize), direction : char)  -> (usize,usize){
+    let mut futurePosition = position.clone();
+    match direction {
+        '^'=> futurePosition.1 -= 1,
+        '>'=> futurePosition.0 += 1,
+        'v'=> futurePosition.1 += 1,
+        '<'=> futurePosition.0 -= 1,
+          _=> (),
+    }
+    return futurePosition;
+}
+
+
+fn rotateGuard(direction : char) -> char {
     match direction {
         '^'=> return '>',
         '>'=> return 'v',
@@ -88,61 +113,78 @@ fn main() {
         }
     }
 
-    let mut positionsVisited : HashMap<(usize,usize),char> = HashMap::new();
-    positionsVisited.insert(guardPosition,guardDirection);
     let initialGuardPosition = guardPosition.clone();
+    let initialGuardDirection = guardDirection; //don't need to clone a primitive
+
+
+    let mut positionsVisited : HashMap<(usize,usize),char> = HashMap::new();
+    positionsVisited.insert(initialGuardPosition,initialGuardDirection);
+
 
     let mut done = false;
     while ! done {
-        let nextPosChar = checkNextPosition(&linesOfStrings, &guardPosition, &guardDirection );
+        let nextPosChar = checkNextPosition(&linesOfStrings, &guardPosition, guardDirection );
         if nextPosChar == '*' {
             done = true;
         } else if nextPosChar == '#' {
-            guardDirection = rotateGuard(&guardDirection);
+            guardDirection = rotateGuard(guardDirection);
         } else {
-            if guardPosition.0 == 0 || guardPosition.1 == 0 {
-                println!("Right before move: {:?} {}", guardPosition, guardDirection);
-                done = true;
-            }
-        
-           moveGuard(&mut guardPosition, &guardDirection,&mut positionsVisited);
+           guardPosition = getMoveToPosition(&guardPosition, guardDirection);
+           positionsVisited.insert(guardPosition, guardDirection);
         }
     }
 
-// insert a blockage somewhere in the path.  The HashMap sort-of has the path.
-// pick a point in the map.  Add a blockage.  Run the same algorithm as before, but now have to detect loops
-    //take the initial position out of the map
-    positionsVisited.remove(&initialGuardPosition);
-    let mut visitedPositionsIter = positionsVisited.iter();
-    println!("Positions visited {:?} Length: {}", positionsVisited, positionsVisited.len());
-    for barrelPosition in visitedPositionsIter {
-        let mut newPositionsVisited : HashMap<(usize,usize),char> = HashMap::new();
+
+    println!("{}",positionsVisited.len());
+    //the old path map can be used as a list of potential blockage locations
+    //but have to remove the starting point (can't put the block on the guard)
+    positionsVisited.remove(&initialGuardPosition); 
+
+
+    let mut loopCount = 0;
+    for (barrelPosition, _ignoredDirection) in positionsVisited {
         guardPosition = initialGuardPosition.clone();
-        guardDirection = '^';
-        newPositionsVisited.insert(guardPosition,guardDirection);
+        guardDirection = initialGuardDirection; //don't need to clone a primitive
+        //new map to track where we've visited
+        let mut loopPositionsVisited : HashMap<(usize,usize),char> = HashMap::new();
+        loopPositionsVisited.insert(guardPosition,guardDirection);
 
-        //get the position from the map.  Put a barrel in it
-        todo!("Add barrel to map");
-
-        //do the same as before, but instead of exiting, detect loops
-        let mut done = false;
+        //don't check for loops until the guard hits a new obstacle (barrel)
+        let mut enableLoopCheck = false;
+        done = false;
         while ! done {
-            let nextPosChar = checkNextPosition(&linesOfStrings, &guardPosition, &guardDirection );
+            let nextPosChar = checkNextPosition(&linesOfStrings, &guardPosition, guardDirection );
             if nextPosChar == '*' {
                 done = true;
             } else if nextPosChar == '#' {
-                guardDirection = rotateGuard(&guardDirection);
-            } else {
-                if guardPosition.0 == 0 || guardPosition.1 == 0 {
-                    println!("Right before move: {:?} {}", guardPosition, guardDirection);
-                    done = true;
+                guardDirection = rotateGuard(guardDirection);
+            } else if willHitBarrel(&guardPosition, guardDirection, &barrelPosition) {
+                guardDirection = rotateGuard(guardDirection);
+                enableLoopCheck = true;
+            }else {
+
+                guardPosition = getMoveToPosition(&guardPosition, guardDirection);
+                if enableLoopCheck {
+
+                    match loopPositionsVisited.get(&guardPosition) {
+                       Some(&directionRef) => { 
+                           if directionRef == guardDirection {
+                               loopCount += 1;
+                               done = true;
+                           }
+                       },
+                       _=> (),
+                    }
                 }
-            
-               moveGuard(&mut guardPosition, &guardDirection,&mut newPositionsVisited);
+   
+                //insert the position into the map after checking everything
+                loopPositionsVisited.insert(guardPosition, guardDirection);
+
             }
         }
-        todo!("Remove Barrel from map");
-    
     }
+
+    println!("Loopcount: {}", loopCount);
+
 
 }
