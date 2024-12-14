@@ -41,7 +41,7 @@ fn main() {
 
     for (_key, value) in antennaPositionsMap.iter() {
         let length = value.len();
-        for vectorIndex in 0..value.len()-1 {
+        for vectorIndex in 0..value.len() {
             let mut nextVectorIndex = vectorIndex + 1;
             while nextVectorIndex != length {
                 let (nodeX,nodeY) = &value[vectorIndex];
