@@ -34,7 +34,7 @@ fn main() {
     for lines in linesOfStrings {
         let mut rocks : Vec<String> = lines.split(' ').map(|x| x.to_string() ).collect();
 
-        let numIterations = 75;
+        let numIterations = 25;
         for _i in 0..numIterations {
             rocks = applyRules(&rocks);
             println!("Num rocks: {}", rocks.len());
